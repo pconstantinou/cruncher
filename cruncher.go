@@ -1,3 +1,46 @@
+/*
+Cruncher provides a quick way to acquire detailed statistics on
+a dataset of arbitrary size.
+Usage:
+    a := NewAccumulator(1000,10)
+    while (dataAvailable) {
+      a.Add(integer)
+    }
+    a.Summarize() // This must be called finalize the computation of the median/mean
+    a.Print(os.StdOut)
+    fmt.Printf("Median: %d", a.IntStats.Media)
+Median value is approximated using the approach defined here:
+http://web.ipac.caltech.edu/staff/fmasci/home/astro_refs/Remedian.pdf
+While this package will work well for data sets of any size it's designed to scale to large
+quantities of data this the reliance on int64.
+
+Below is an example of the output of the data gathered from a random gausian number
+generator.
+
+	= Summary ======================
+	Min              -150
+	Max               354
+	Count        10000000
+	Mean              100.000
+	Median            100
+
+	= Distribution (interval: 63) ====
+	    -150 -      -56 :    8947 (0.09%)**
+	     -55 -        7 :  305232 (3.05%)
+	       8 -       70 : 2428044 (24.28%)
+	      71 -      133 : 4774283 (47.74%)
+	     134 -      196 : 2221206 (22.21%)
+	     197 -      259 :  255458 (2.55%)
+	     261 -      354 :    6829 (0.07%)**
+
+	= Top Value Frequency ==========
+	 1.      100 :  159908 (1.60%)
+	 2.      102 :   79795 (0.80%)
+	 3.       98 :   79726 (0.80%)
+	 4.      106 :   79595 (0.80%)
+	 5.      105 :   79553 (0.80%)
+
+*/
 package cruncher
 
 import (
@@ -7,27 +50,15 @@ import (
 	"sort"
 )
 
-// Cruncher provides a quick way to acquire detailed statistics on
-// a dataset of arbitrary size.
-// Usage:
-//    a := NewAccumulator(1000,10)
-//    while (dataAvailable)
-//      a.Add(integer)
-//    a.Summarize() // This must be called finalize the computation of the median/mean
-//    a.Print(os.StdOut)
-//    fmt.Printf("Median: %d", a.IntStats.Media)
-// Media is approximated using the approach defined here:
-// http://web.ipac.caltech.edu/staff/fmasci/home/astro_refs/Remedian.pdf
-// While this object will work well for data sets of any size it's designed to scale to large
-// quantities of data
-
 const (
+	// Initial_Remedian_Size is the number of entries pre-allocated for maintaining
+	// the median/
 	Initial_Remedian_Size = 4
 )
 
 // IntStats contains all the stats accumulated. It's best to
-// Maintain references only to the IntStats once the accumulation is
-// complete to free up memory allocated when computing the median
+// maintain references only to the IntStats once the accumulation is
+// complete and remove references to Accumulator.
 type IntStats struct {
 	// Smallest valued added
 	Min int64
@@ -77,6 +108,9 @@ func NewAccumulator(appoximationWindow, buckets int) *Accumulator {
 	return a
 }
 
+// Add adds a value to the data set to be summarized. Add is typically a constant
+// time operation but may periodically include some iteration to update some
+// statistics.
 func (a *Accumulator) Add(value int64) {
 	// Adjust Min and Max
 	if a.intStats.Count == 0 {
@@ -210,13 +244,15 @@ func (p PairList) Len() int           { return len(p) }
 func (p PairList) Less(i, j int) bool { return p[i].Frequency < p[j].Frequency }
 func (p PairList) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
 
-// Gets the current stats if the data set continues to
-// accumulate more data this copy will not be impacted.
+// Gets the current stats. If the data set continues to
+// accumulate the accumulator should continue to update results however,
+// The copy returned will not be impacted.
 func (a *Accumulator) GetStats() IntStats {
 	a.Summarize()
 	return a.intStats
 }
 
+// Print an ascii formatted human readable version of the summarized data
 func (a *Accumulator) Print(w io.Writer) {
 	a.Summarize()
 	a.intStats.Print(w)

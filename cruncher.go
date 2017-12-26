@@ -1,5 +1,5 @@
 /*
-Cruncher provides a quick way to acquire detailed statistics on
+Package cruncher provides a quick way to acquire detailed statistics on
 a dataset of arbitrary size.
 Usage:
     a := NewAccumulator(1000,10)
@@ -51,9 +51,9 @@ import (
 )
 
 const (
-	// Initial_Remedian_Size is the number of entries pre-allocated for maintaining
+	// InitialRemedianSize is the number of entries pre-allocated for maintaining
 	// the median/
-	Initial_Remedian_Size = 4
+	InitialRemedianSize = 4
 )
 
 // IntStats contains all the stats accumulated. It's best to
@@ -85,6 +85,8 @@ type IntStats struct {
 	ValueFrequency map[int64]int64
 }
 
+// Accumulator maintains the transient state collected when accomulating
+// statistics on a set of data. The results are available GetStats
 type Accumulator struct {
 	intStats           IntStats
 	remedians          [][]int64
@@ -93,7 +95,7 @@ type Accumulator struct {
 	buckets            int
 }
 
-// Allocates an accumulator that collects statistics on data added.
+// NewAccumulator allocates an accumulator that collects statistics on data added.
 // appoximationWindow is the amount of data to sample before computing
 // the min and max for the frequency distribution. This
 // value is also used to compute the median. Larger values require more
@@ -103,7 +105,7 @@ type Accumulator struct {
 func NewAccumulator(appoximationWindow, buckets int) *Accumulator {
 	a := new(Accumulator)
 	a.appoximationWindow = appoximationWindow
-	a.remedians = make([][]int64, 0, Initial_Remedian_Size)
+	a.remedians = make([][]int64, 0, InitialRemedianSize)
 	a.buckets = buckets
 	return a
 }
@@ -216,7 +218,7 @@ func (a *Accumulator) Summarize() {
 	}
 }
 
-// GetTermFreuqency returns the most frequently used terms. This is an
+// GetTermFrequency returns the most frequently used terms. This is an
 // Approximation. If the first term does not appear within the
 // first approximationWindow data set then it will be omitted from the results
 func (is IntStats) GetTermFrequency(topN int) PairList {
@@ -233,19 +235,21 @@ func (is IntStats) GetTermFrequency(topN int) PairList {
 	return pl[:topN]
 }
 
+// Pair provides a touple of the value provide and the frequency of the values use
 type Pair struct {
 	Value     int64
 	Frequency int64
 }
 
+// PairList is an array of Pair's
 type PairList []Pair
 
 func (p PairList) Len() int           { return len(p) }
 func (p PairList) Less(i, j int) bool { return p[i].Frequency < p[j].Frequency }
 func (p PairList) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
 
-// Gets the current stats. If the data set continues to
-// accumulate the accumulator should continue to update results however,
+// GetStats provides the current stats accumulated. If the data set continues to
+// accumulate the accumulator update the results however,
 // The copy returned will not be impacted.
 func (a *Accumulator) GetStats() IntStats {
 	a.Summarize()
@@ -259,37 +263,37 @@ func (a *Accumulator) Print(w io.Writer) {
 }
 
 // Print outputs all the the acquired data about the accumulated values.
-func (s IntStats) Print(w io.Writer) {
+func (is IntStats) Print(w io.Writer) {
 	fmt.Fprintf(w, "= Summary ======================\n")
-	fmt.Fprintf(w, "%-8s %12d\n", "Min", s.Min)
-	fmt.Fprintf(w, "%-8s %12d\n", "Max", s.Max)
-	fmt.Fprintf(w, "%-8s %12d\n", "Count", s.Count)
-	fmt.Fprintf(w, "%-8s %16.3f\n", "Mean", s.Mean)
-	fmt.Fprintf(w, "%-8s %12d\n", "Median", s.Median)
+	fmt.Fprintf(w, "%-8s %12d\n", "Min", is.Min)
+	fmt.Fprintf(w, "%-8s %12d\n", "Max", is.Max)
+	fmt.Fprintf(w, "%-8s %12d\n", "Count", is.Count)
+	fmt.Fprintf(w, "%-8s %16.3f\n", "Mean", is.Mean)
+	fmt.Fprintf(w, "%-8s %12d\n", "Median", is.Median)
 
 	fmt.Println()
-	fmt.Fprintf(w, "= Distribution (interval: %d) ====\n", s.BucketSize)
-	if s.OutlierBefore > 0 {
-		fmt.Fprintf(w, "%8d - %8d :%8d (%4.2f%%)**\n", s.Min, s.FrequencyDistributionStartingValue-1,
-			s.OutlierBefore, 100.0*float64(s.OutlierBefore)/float64(s.Count))
+	fmt.Fprintf(w, "= Distribution (interval: %d) ====\n", is.BucketSize)
+	if is.OutlierBefore > 0 {
+		fmt.Fprintf(w, "%8d - %8d :%8d (%4.2f%%)**\n", is.Min, is.FrequencyDistributionStartingValue-1,
+			is.OutlierBefore, 100.0*float64(is.OutlierBefore)/float64(is.Count))
 	}
 
-	for key, value := range s.FrequencyDistribution {
+	for key, value := range is.FrequencyDistribution {
 		fmt.Fprintf(w, "%8d - %8d :%8d (%4.2f%%)\n",
-			(s.FrequencyDistributionStartingValue)+(s.BucketSize*int64(key)),
-			((s.FrequencyDistributionStartingValue)+(s.BucketSize*(int64(key)+1)))-1, value,
-			100.0*float64(value)/float64(s.Count))
+			(is.FrequencyDistributionStartingValue)+(is.BucketSize*int64(key)),
+			((is.FrequencyDistributionStartingValue)+(is.BucketSize*(int64(key)+1)))-1, value,
+			100.0*float64(value)/float64(is.Count))
 	}
-	if s.OutlierAfter > 0 {
+	if is.OutlierAfter > 0 {
 		fmt.Fprintf(w, "%8d - %8d :%8d (%4.2f%%)**\n",
-			s.FrequencyDistributionStartingValue+(s.BucketSize*int64(len(s.FrequencyDistribution)))+1,
-			s.Max, s.OutlierAfter, 100.0*float64(s.OutlierAfter)/float64(s.Count))
+			is.FrequencyDistributionStartingValue+(is.BucketSize*int64(len(is.FrequencyDistribution)))+1,
+			is.Max, is.OutlierAfter, 100.0*float64(is.OutlierAfter)/float64(is.Count))
 	}
 	fmt.Println()
 	fmt.Fprintf(w, "= Top Value Frequency ==========\n")
-	for i, pair := range s.GetTermFrequency(5) {
+	for i, pair := range is.GetTermFrequency(5) {
 		fmt.Fprintf(w, "%2d. %8d :%8d (%4.2f%%)\n", i+1, pair.Value, pair.Frequency,
-			100.0*float64(pair.Frequency)/float64(s.Count))
+			100.0*float64(pair.Frequency)/float64(is.Count))
 	}
 	fmt.Println()
 }

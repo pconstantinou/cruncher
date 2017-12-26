@@ -271,29 +271,31 @@ func (is IntStats) Print(w io.Writer) {
 	fmt.Fprintf(w, "%-8s %16.3f\n", "Mean", is.Mean)
 	fmt.Fprintf(w, "%-8s %12d\n", "Median", is.Median)
 
-	fmt.Println()
-	fmt.Fprintf(w, "= Distribution (interval: %d) ====\n", is.BucketSize)
-	if is.OutlierBefore > 0 {
-		fmt.Fprintf(w, "%8d - %8d :%8d (%4.2f%%)**\n", is.Min, is.FrequencyDistributionStartingValue-1,
-			is.OutlierBefore, 100.0*float64(is.OutlierBefore)/float64(is.Count))
-	}
+	if is.Count > 0 {
+		fmt.Println()
+		fmt.Fprintf(w, "= Distribution (interval: %d) ====\n", is.BucketSize)
+		if is.OutlierBefore > 0 {
+			fmt.Fprintf(w, "%8d - %8d :%8d (%4.2f%%)**\n", is.Min, is.FrequencyDistributionStartingValue-1,
+				is.OutlierBefore, 100.0*float64(is.OutlierBefore)/float64(is.Count))
+		}
 
-	for key, value := range is.FrequencyDistribution {
-		fmt.Fprintf(w, "%8d - %8d :%8d (%4.2f%%)\n",
-			(is.FrequencyDistributionStartingValue)+(is.BucketSize*int64(key)),
-			((is.FrequencyDistributionStartingValue)+(is.BucketSize*(int64(key)+1)))-1, value,
-			100.0*float64(value)/float64(is.Count))
-	}
-	if is.OutlierAfter > 0 {
-		fmt.Fprintf(w, "%8d - %8d :%8d (%4.2f%%)**\n",
-			is.FrequencyDistributionStartingValue+(is.BucketSize*int64(len(is.FrequencyDistribution)))+1,
-			is.Max, is.OutlierAfter, 100.0*float64(is.OutlierAfter)/float64(is.Count))
-	}
-	fmt.Println()
-	fmt.Fprintf(w, "= Top Value Frequency ==========\n")
-	for i, pair := range is.GetTermFrequency(5) {
-		fmt.Fprintf(w, "%2d. %8d :%8d (%4.2f%%)\n", i+1, pair.Value, pair.Frequency,
-			100.0*float64(pair.Frequency)/float64(is.Count))
+		for key, value := range is.FrequencyDistribution {
+			fmt.Fprintf(w, "%8d - %8d :%8d (%4.2f%%)\n",
+				(is.FrequencyDistributionStartingValue)+(is.BucketSize*int64(key)),
+				((is.FrequencyDistributionStartingValue)+(is.BucketSize*(int64(key)+1)))-1, value,
+				100.0*float64(value)/float64(is.Count))
+		}
+		if is.OutlierAfter > 0 {
+			fmt.Fprintf(w, "%8d - %8d :%8d (%4.2f%%)**\n",
+				is.FrequencyDistributionStartingValue+(is.BucketSize*int64(len(is.FrequencyDistribution)))+1,
+				is.Max, is.OutlierAfter, 100.0*float64(is.OutlierAfter)/float64(is.Count))
+		}
+		fmt.Println()
+		fmt.Fprintf(w, "= Top Value Frequency ==========\n")
+		for i, pair := range is.GetTermFrequency(5) {
+			fmt.Fprintf(w, "%2d. %8d :%8d (%4.2f%%)\n", i+1, pair.Value, pair.Frequency,
+				100.0*float64(pair.Frequency)/float64(is.Count))
+		}
 	}
 	fmt.Println()
 }

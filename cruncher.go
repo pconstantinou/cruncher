@@ -44,6 +44,7 @@ generator.
 package cruncher
 
 import (
+	"container/heap"
 	"fmt"
 	"io"
 	"math"
@@ -218,21 +219,48 @@ func (a *Accumulator) Summarize() {
 	}
 }
 
+type pairHeap []Pair
+
+func (h pairHeap) Len() int           { return len(h) }
+func (h pairHeap) Less(i, j int) bool { return h[i].Frequency < h[j].Frequency }
+func (h pairHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
+
+func (h *pairHeap) Push(x interface{}) {
+	// Push and Pop use pointer receivers because they modify the slice's length,
+	// not just its contents.
+	*h = append(*h, x.(Pair))
+}
+
+func (h *pairHeap) Pop() interface{} {
+	old := *h
+	n := len(old)
+	x := old[n-1]
+	*h = old[0 : n-1]
+	return x
+}
+
 // GetTermFrequency returns the most frequently used terms. This is an
 // Approximation. If the first term does not appear within the
 // first approximationWindow data set then it will be omitted from the results
 func (is IntStats) GetTermFrequency(topN int) PairList {
-	pl := make(PairList, len(is.ValueFrequency))
-	if topN > len(is.ValueFrequency) {
-		topN = len(is.ValueFrequency)
-	}
-	i := 0
+	h := &pairHeap{}
+	heap.Init(h)
+	// Create heap of the topN most frequent terms
 	for k, f := range is.ValueFrequency {
-		pl[i] = Pair{k, f}
-		i++
+		if h.Len() < topN {
+			heap.Push(h, Pair{k, f})
+		} else if (*h)[0].Frequency < f {
+			heap.Pop(h)
+			heap.Push(h, Pair{k, f})
+		}
 	}
-	sort.Sort(sort.Reverse(pl))
-	return pl[:topN]
+	// Copy them to a list
+	pl := make(PairList, h.Len(), h.Len())
+	for i, p := range *h {
+		pl[h.Len()-1-i] = p
+	}
+
+	return pl
 }
 
 // Pair provides a touple of the value provide and the frequency of the values use
@@ -243,10 +271,6 @@ type Pair struct {
 
 // PairList is an array of Pair's
 type PairList []Pair
-
-func (p PairList) Len() int           { return len(p) }
-func (p PairList) Less(i, j int) bool { return p[i].Frequency < p[j].Frequency }
-func (p PairList) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
 
 // GetStats provides the current stats accumulated. If the data set continues to
 // accumulate the accumulator update the results however,

@@ -299,7 +299,7 @@ func (is IntStats) Print(w io.Writer) {
 func (is IntStats) PrintValueFrequency(w io.Writer, topValues int) {
 	if is.Count > 0 {
 		fmt.Fprintf(w, "= Top Value Frequency ==========\n")
-		for i, pair := range is.GetTermFrequency(topTerms) {
+		for i, pair := range is.GetTermFrequency(topValues) {
 			fmt.Fprintf(w, "%2d. %8d :%8d (%4.2f%%)\n", i+1, pair.Value, pair.Frequency,
 				100.0*float64(pair.Frequency)/float64(is.Count))
 		}

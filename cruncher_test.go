@@ -34,7 +34,7 @@ func TestMaxMinMeanMedianAccomulation(t *testing.T) {
 }
 
 func TestConsecutive(t *testing.T) {
-	a := NewAccumulator(1000, 10)
+	a := NewAccumulator(1000, 7)
 	a.Add(1)
 	a.Add(2)
 	a.Add(3)

@@ -226,8 +226,6 @@ func (h pairHeap) Less(i, j int) bool { return h[i].Frequency < h[j].Frequency }
 func (h pairHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
 
 func (h *pairHeap) Push(x interface{}) {
-	// Push and Pop use pointer receivers because they modify the slice's length,
-	// not just its contents.
 	*h = append(*h, x.(Pair))
 }
 
@@ -288,6 +286,52 @@ func (a *Accumulator) Print(w io.Writer) {
 
 // Print outputs all the the acquired data about the accumulated values.
 func (is IntStats) Print(w io.Writer) {
+	is.PrintSummary(w)
+	fmt.Println()
+	is.PrintFrequencyDistribution(w)
+	fmt.Println()
+	fmt.Println()
+	is.PrintValueFrequency(w, 5)
+}
+
+// PrintValueFrequency prints out the most frequent values in most
+// to least frequent order.
+func (is IntStats) PrintValueFrequency(w io.Writer, topValues int) {
+	if is.Count > 0 {
+		fmt.Fprintf(w, "= Top Value Frequency ==========\n")
+		for i, pair := range is.GetTermFrequency(topTerms) {
+			fmt.Fprintf(w, "%2d. %8d :%8d (%4.2f%%)\n", i+1, pair.Value, pair.Frequency,
+				100.0*float64(pair.Frequency)/float64(is.Count))
+		}
+	}
+}
+
+// PrintFrequencyDistribution provides a count of the number of values within each equally
+// sized bucket. Additionally, if the approximation window didn't capture all the possible values
+// the range between the min and max and the frequency distribution are provided.
+func (is IntStats) PrintFrequencyDistribution(w io.Writer) {
+	fmt.Fprintf(w, "= Distribution (size: %d number: %d) ====\n", is.BucketSize, len(is.FrequencyDistribution))
+	if is.OutlierBefore > 0 {
+		fmt.Fprintf(w, "%8d - %8d :%8d (%4.2f%%)**\n", is.Min, is.FrequencyDistributionStartingValue-1,
+			is.OutlierBefore, 100.0*float64(is.OutlierBefore)/float64(is.Count))
+	}
+
+	for key, value := range is.FrequencyDistribution {
+		fmt.Fprintf(w, "%8d - %8d :%8d (%4.2f%%)\n",
+			(is.FrequencyDistributionStartingValue)+(is.BucketSize*int64(key)),
+			((is.FrequencyDistributionStartingValue)+(is.BucketSize*(int64(key)+1)))-1, value,
+			100.0*float64(value)/float64(is.Count))
+	}
+	if is.OutlierAfter > 0 {
+		fmt.Fprintf(w, "%8d - %8d :%8d (%4.2f%%)**\n",
+			is.FrequencyDistributionStartingValue+(is.BucketSize*int64(len(is.FrequencyDistribution)))+1,
+			is.Max, is.OutlierAfter, 100.0*float64(is.OutlierAfter)/float64(is.Count))
+	}
+
+}
+
+// PrintSummary prints the min, max, mean, count and median
+func (is IntStats) PrintSummary(w io.Writer) {
 	fmt.Fprintf(w, "= Summary ======================\n")
 	fmt.Fprintf(w, "%-8s %12d\n", "Min", is.Min)
 	fmt.Fprintf(w, "%-8s %12d\n", "Max", is.Max)
@@ -295,31 +339,4 @@ func (is IntStats) Print(w io.Writer) {
 	fmt.Fprintf(w, "%-8s %16.3f\n", "Mean", is.Mean)
 	fmt.Fprintf(w, "%-8s %12d\n", "Median", is.Median)
 
-	if is.Count > 0 {
-		fmt.Println()
-		fmt.Fprintf(w, "= Distribution (interval: %d) ====\n", is.BucketSize)
-		if is.OutlierBefore > 0 {
-			fmt.Fprintf(w, "%8d - %8d :%8d (%4.2f%%)**\n", is.Min, is.FrequencyDistributionStartingValue-1,
-				is.OutlierBefore, 100.0*float64(is.OutlierBefore)/float64(is.Count))
-		}
-
-		for key, value := range is.FrequencyDistribution {
-			fmt.Fprintf(w, "%8d - %8d :%8d (%4.2f%%)\n",
-				(is.FrequencyDistributionStartingValue)+(is.BucketSize*int64(key)),
-				((is.FrequencyDistributionStartingValue)+(is.BucketSize*(int64(key)+1)))-1, value,
-				100.0*float64(value)/float64(is.Count))
-		}
-		if is.OutlierAfter > 0 {
-			fmt.Fprintf(w, "%8d - %8d :%8d (%4.2f%%)**\n",
-				is.FrequencyDistributionStartingValue+(is.BucketSize*int64(len(is.FrequencyDistribution)))+1,
-				is.Max, is.OutlierAfter, 100.0*float64(is.OutlierAfter)/float64(is.Count))
-		}
-		fmt.Println()
-		fmt.Fprintf(w, "= Top Value Frequency ==========\n")
-		for i, pair := range is.GetTermFrequency(5) {
-			fmt.Fprintf(w, "%2d. %8d :%8d (%4.2f%%)\n", i+1, pair.Value, pair.Frequency,
-				100.0*float64(pair.Frequency)/float64(is.Count))
-		}
-	}
-	fmt.Println()
 }

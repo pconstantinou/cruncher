@@ -212,7 +212,7 @@ func (a *Accumulator) Summarize() {
 	if a.intStats.Count < int64(a.appoximationWindow) {
 		a.initializeFrequencyDistribution()
 	}
-	a.intStats.Mean = (float64)(a.total / a.intStats.Count)
+	a.intStats.Mean = float64(a.total) / float64(a.intStats.Count)
 	for i := len(a.remedians) - 1; i >= 0; i-- {
 		_, _, a.intStats.Median = computeMedian(a.remedians[i])
 		return

@@ -7,14 +7,6 @@ import (
 	"testing"
 )
 
-func TestSmallAccomulation(t *testing.T) {
-	a := NewAccumulator(1000, 5)
-	for i := 0; i < 10; i++ {
-		a.Add(int64(rand.Int63n(1776) * rand.Int63n(1776)))
-	}
-	a.Print(os.Stdout)
-}
-
 func TestMaxMinMeanMedianAccomulation(t *testing.T) {
 	a := NewAccumulator(1000, 5)
 	a.Add(1)
@@ -93,6 +85,14 @@ func TestFixed(t *testing.T) {
 		t.Errorf("Median value should be 200 but was %d.", v)
 	}
 
+}
+
+func TestSmallAccomulation(t *testing.T) {
+	a := NewAccumulator(1000, 5)
+	for i := 0; i < 10; i++ {
+		a.Add(int64(rand.Int63n(1776) * rand.Int63n(1776)))
+	}
+	a.Print(os.Stdout)
 }
 
 func TestLargeAccomulation(t *testing.T) {

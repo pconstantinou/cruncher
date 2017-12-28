@@ -15,6 +15,42 @@ func TestSmallAccomulation(t *testing.T) {
 	a.Print(os.Stdout)
 }
 
+func TestConsecutive(t *testing.T) {
+	a := NewAccumulator(1000, 10)
+	a.Add(1)
+	a.Add(2)
+	a.Add(3)
+	if len(a.GetStats().GetTermFrequency(10)) != 3 {
+		t.Errorf("Should only have 3 terms")
+	}
+	a.Add(4)
+	a.Add(4)
+	a.Add(4)
+	a.Add(5)
+	a.Add(6)
+	a.Add(7)
+	a.Print(os.Stdout)
+	if v := a.GetStats().GetTermFrequency(10)[0].Value; v != 4 {
+		t.Errorf("Value should be 4 but was %d.", v)
+	}
+	testFrequency(t, a.GetStats())
+}
+
+func testFrequency(t *testing.T, is IntStats) {
+	var prev Pair
+	for i, v := range is.GetTermFrequency(10) {
+		if i == 0 {
+			prev = v
+		} else {
+			if prev.Frequency < v.Frequency {
+				t.Errorf("Term frequency is not in the correct order term %d with value %d and frequency %d should not be after %d with frequency %d",
+					i, v.Value, v.Frequency, prev.Value, prev.Frequency)
+			}
+		}
+	}
+
+}
+
 func TestFixed(t *testing.T) {
 	a := NewAccumulator(1000, 10)
 	a.Add(200)
@@ -26,15 +62,20 @@ func TestFixed(t *testing.T) {
 	a.Add(1000)
 	a.Add(1000)
 	a.Print(os.Stdout)
+	testFrequency(t, a.GetStats())
+	if v := a.GetStats().Median; v != 200 {
+		t.Errorf("Median value should be 200 but was %d.", v)
+	}
+
 }
 
 func TestLargeAccomulation(t *testing.T) {
 	a := NewAccumulator(1000, 20)
-	for i := 0; i < 100000000; i++ {
+	for i := 0; i < 10000000; i++ {
 		a.Add(int64(rand.Int63n(1776) * rand.Int63n(1776)))
 	}
-	// Should have an even distribution
 	a.Print(os.Stdout)
+	testFrequency(t, a.GetStats())
 }
 
 func TestGausianAccomulation(t *testing.T) {
@@ -44,6 +85,7 @@ func TestGausianAccomulation(t *testing.T) {
 	}
 	// Should have a gausean
 	a.Print(os.Stdout)
+	testFrequency(t, a.GetStats())
 }
 
 func BenchmarkGausianAccomulation(b *testing.B) {

@@ -53,7 +53,7 @@ import (
 
 const (
 	// InitialRemedianSize is the number of entries pre-allocated for maintaining
-	// the median/
+	// the median
 	InitialRemedianSize = 4
 )
 
@@ -143,7 +143,7 @@ func (a *Accumulator) Add(value int64) {
 	// Must do this last so the full set of values is available
 	a.pushMedianValue(0, value)
 
-	// Count frequencies but don't counnt more than a.appoximationWindow
+	// Count frequencies but don't count more than a.appoximationWindow
 	valueCount, present := a.intStats.ValueFrequency[value]
 	if present {
 		a.intStats.ValueFrequency[value] = valueCount + 1
@@ -254,10 +254,10 @@ func (is IntStats) GetTermFrequency(topN int) PairList {
 	}
 	// Copy them to a list
 	pl := make(PairList, h.Len(), h.Len())
-	for i, p := range *h {
-		pl[h.Len()-1-i] = p
+	for i := h.Len() - 1; i >= 0; i-- {
+		pl[i] = (*h)[0]
+		heap.Pop(h)
 	}
-
 	return pl
 }
 

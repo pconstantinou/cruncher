@@ -15,6 +15,32 @@ func TestSmallAccomulation(t *testing.T) {
 	a.Print(os.Stdout)
 }
 
+func TestMaxMinMeanMedianAccomulation(t *testing.T) {
+	a := NewAccumulator(1000, 5)
+	a.Add(1)
+	a.Add(2)
+	a.Add(4)
+	a.Print(os.Stdout)
+	intStats := a.GetStats()
+
+	if actual, correct := intStats.Min, int64(1); actual != correct {
+		t.Errorf("Min: %d != %d", actual, correct)
+	}
+	if actual, correct := intStats.Max, int64(4); actual != correct {
+		t.Errorf("Max: %d != %d", actual, correct)
+	}
+	if actual, correct := intStats.Median, int64(2); actual != correct {
+		t.Errorf("Median: %d != %d", actual, correct)
+	}
+	if actual, correct := intStats.Mean, float64(7.0/3.0); actual != correct {
+		t.Errorf("Mean: %f != %f", actual, correct)
+	}
+	if actual, correct := intStats.Count, int64(3); actual != correct {
+		t.Errorf("Count: %d != %d", actual, correct)
+	}
+
+}
+
 func TestConsecutive(t *testing.T) {
 	a := NewAccumulator(1000, 10)
 	a.Add(1)

@@ -4,8 +4,11 @@ build:
 
 verify: build
 	go test -coverprofile=cover.out
-	go tool cover -html=cover.out
 	golint
+
+coverage: verify
+	go tool cover -html=cover.out
+	
 
 all: verify
 	go install
@@ -19,3 +22,7 @@ commit: verify
 
 push: rebase verify
 	git push
+
+
+check:	rebase coverage
+	git status
